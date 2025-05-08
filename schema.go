@@ -369,6 +369,7 @@ func structNodeOf(t reflect.Type) *structNode {
 			fields[i].Tag.Get("parquet"),
 			fields[i].Tag.Get("parquet-key"),
 			fields[i].Tag.Get("parquet-value"),
+			fields[i].Tag.Get("parquet-element"),
 		})
 		s.fields[i] = field
 	}
@@ -833,6 +834,23 @@ func makeNodeOf(t reflect.Type, name string, tag []string) Node {
 			switch t.Kind() {
 			case reflect.Slice:
 				element := nodeOf(t.Elem(), nil)
+
+				var elementTag string
+				if len(tag) > 0 {
+					elementTag = tag[3]
+				}
+				forEachTagOption([]string{elementTag}, func(option, args string) {
+					switch option {
+					case "eid":
+						id, err := parseIDArgs(args)
+						if err != nil {
+							throwInvalidTag(t, "list element", option)
+						}
+						element = FieldID(element, id)
+					default:
+						throwUnknownTag(t, "list element", option)
+					}
+				})
 				setNode(element)
 				setList()
 			default:
